@@ -149,9 +149,26 @@ function render(){
   h+='</div></div>';if(sel)h+=cards(sorted(E.filter(function(e){return dk(e.ts)===sel})))}
  else if(view==="insights"){var w=0,mc=[0,0,0,0,0];E.forEach(function(e){w+=(e.text.trim().split(/\s+/).filter(Boolean).length);mc[e.mood]++});var mx=Math.max.apply(null,mc.concat(1));
   h='<div class="cal-h"><b>Insights</b></div><div class="sec stat"><div><b>'+E.length+'</b><small>Entries</small></div><div><b>'+w+'</b><small>Words</small></div><div><b>'+streak()+'</b><small>Day streak</small></div></div><div class="sec"><b>Moods</b><div class="bars">'+mc.map(function(c,i){return '<div><i style="height:'+Math.round(c/mx*80)+'px"></i><span>'+MOODS[i]+' '+c+'</span></div>'}).join("")+'</div></div>'}
- else{h='<div class="cal-h"><b>More</b></div><div class="sec"><button class="btn" id="exp">Back up my diary (download file)</button><button class="btn" id="impb">Restore from a backup</button><button class="btn" id="cpy">Copy all entries as text</button><button class="btn red" id="clr">Delete everything</button></div><p class="empty">Your entries are stored only on this device. Back up now and then.</p>'}
+ else{h='<div class="cal-h"><b>More</b></div><div class="sec" id="inst"></div><div class="sec"><button class="btn" id="exp">Back up my diary (download file)</button><button class="btn" id="impb">Restore from a backup</button><button class="btn" id="cpy">Copy all entries as text</button><button class="btn red" id="clr">Delete everything</button></div><p class="empty">Your entries are stored only on this device. Back up now and then.</p>'}
  v.innerHTML=h;wire()}
+
+var dp=null;
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();dp=e;if($("inst"))diag()});
+window.addEventListener("appinstalled",function(){dp=null;toast("Installed!");if($("inst"))diag()});
+function row(ok,t){return '<div style="padding:3px 0">'+(ok===null?"…":ok?"✅":"❌")+" "+t+"</div>"}
+function diag(){var b=$("inst");if(!b)return;
+ var sa=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone;
+ var h='<b>Install app</b>';
+ if(sa){b.innerHTML=h+row(true,"You are already using the installed app.");return}
+ if(dp)h+='<p style="color:var(--soft);margin:6px 0 10px">Your phone allows installing.</p><button class="save" id="doinst" style="width:100%">Install Diary</button>';
+ else h+='<p style="color:var(--soft);margin:6px 0">Install button not offered yet. Checking why:</p>';
+ var r=[row(window.isSecureContext,"Secure (https) page"),row("serviceWorker"in navigator,"Service worker supported"),row(!!navigator.serviceWorker&&!!navigator.serviceWorker.controller,"Service worker running (reload once if ❌)"),row(dp?true:false,"Browser says app is installable")];
+ b.innerHTML=h+r.join("")+'<div id="mf">…</div>'+(dp?"":'<p style="color:var(--soft);margin:8px 0 0;font-size:14px">Tip: in Chrome tap ⋮ then <b>Add to Home screen</b>. Brave and other browsers may not offer install.</p>')+'<div style="color:var(--soft);font-size:13px;margin-top:6px">Browser: '+esc(navigator.userAgent.replace(/\).*$/,")").slice(0,90))+'</div>';
+ var di=$("doinst");if(di)di.onclick=function(){dp.prompt();dp.userChoice.then(function(){dp=null;diag()})};
+ fetch("manifest.webmanifest").then(function(x){return x.json().then(function(m){$("mf").innerHTML=row(true,"Manifest found")+row(!!(m.icons&&m.icons.length>1),"Icons listed")})}).catch(function(){var m=$("mf");if(m)m.innerHTML=row(false,"Manifest not found – check the file name")});
+}
 function wire(){
+ if($("inst"))diag();
  [].forEach.call(document.querySelectorAll(".card[data-id]"),function(c){c.onclick=function(){openEd(c.dataset.id)}});
  var s=$("search");if(s){s.oninput=function(){q=s.value;var p=s.selectionStart;render();var n=$("search");n.focus();n.setSelectionRange(p,p)}}
  [].forEach.call(document.querySelectorAll(".cd"),function(b){b.onclick=function(){sel=sel===b.dataset.k?null:b.dataset.k;render()}});
