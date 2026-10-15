@@ -1,4 +1,5 @@
 {
+  "id": "/DIARY/diary-app",
   "name": "Diary",
   "short_name": "Diary",
   "description": "A private diary that works offline.",
